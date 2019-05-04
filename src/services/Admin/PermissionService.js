@@ -139,7 +139,7 @@ module.exports = class PermissionService {
             const { permissionName, meta } = data;
             if (!permissionName && !permissionId) return result.paramsLack();
             PermissionModel.update({
-                ...data,
+                data,
                 meta: JSON.stringify(meta)
             }, {
                 where: { permissionId },

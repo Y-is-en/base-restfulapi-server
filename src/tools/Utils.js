@@ -20,6 +20,17 @@ class Utils {
     }
 
     /**
+     * 校验老师身份
+     * @param {*} authorization
+     */
+    isTeacher(authorization) {
+        if (!authorization) return false;
+        const validate = validateTools.validateJWT(authorization);
+        if (validate.data.type == '1') return true;
+        return false;
+    }
+
+    /**
      * 获取jwt数据
      * @param {*} authorization
      */

@@ -1,8 +1,8 @@
 import result from '../../tools/Result';
-import middleware from '../../middleware';
-const {
-    ValidateTools
-} = middleware.ValidateTools;
+import { ValidateTools } from '../../middleware/ValidateTools';
+import UserModel from '../../models/UserModel';
+import bcrypt from 'bcryptjs';
+import Utils from '../../tools/Utils';
 const validateTools = new ValidateTools();
 
 // import sequelize from '../lib/sequelize';
@@ -17,84 +17,162 @@ const validateTools = new ValidateTools();
  */
 module.exports = class UserService {
 
-    // /**
-    //  * 用户注册
-    //  * @param {*} user
-    //  */
-    // async userRegister(user) {
-    //     try {
-    //         const res = await userModel.create(user);
-    //         return result.success(null, res);
-    //     } catch (error) {
-    //         console.log(error);
-    //         return result.failed();
-    //     }
-    // }
+    /**
+     * 用户注册
+     * @param {*} user
+     */
+    async userRegister(user) {
+        let { username, sno, password, classes, image, type = 0 } = user;
+        let params = {
+            username,
+            sno,
+            password,
+            classes,
+            image
+        };
+        // 检测参数是否存在为空
+        for (let item in params) {
+            if (params[item] === undefined) {
+                return result.paramsLack('错误: 参数: ' + item + '不能为空', 412, '');
+            }
+        }
+
+        params.type = type;
+        // 查询用户名是否重复
+        const existUser = await UserModel.usersno(params.sno);
+        if (existUser) {
+            return result.failed('用户已经存在', 403);
+        }
+        try {
+            // 加密密码
+            const salt = bcrypt.genSaltSync();
+            const hash = bcrypt.hashSync(params.password, salt);
+            params.password = hash;
+
+            // 创建用户
+            await UserModel.create(params);
+            const newUser = await UserModel.usersno(params.sno);
+
+            // 签发token
+            const userToken = {
+                username: newUser.username,
+                email: newUser.email,
+                id: newUser.id
+            };
+
+            // 储存token失效有效期1小时
+            const token = validateTools.getJWT(userToken, '1h');
+
+            return result.success('注册成功', token);
+
+        } catch (err) {
+            return result.failed(err, 500);
+        }
+    }
 
     /**
      * 用户登录
      * @param {*} user
      */
-    async userLogin({
-        username,
-        password
-    }) {
-        try {
-            /*  const res = await userModel.findOne({
-                 where: {
-                     username,
-                     password
-                 }
-             });
-             if (res) {
-                 return result.success(null, res);
-             } else {
-                 return result.failed(`用户名或密码错误`);
-             } */
-            const userInfo = {
-                admin: 'admin',
-                roleId: 1531531534865486,
-                username: '超级飞侠',
-                roleName: '超级管理员',
-                userId: 123516186461
-            };
-
-            const token = validateTools.getJWT(userInfo, 60);
-
-            console.log(token);
-            return result.success('签发token', {
-                token
-            });
-        } catch (error) {
-            console.log(error);
-            return result.failed();
+    async userLogin({ sno, password }) {
+        let params = {
+            sno,
+            password
+        };
+        // 检测参数是否存在为空
+        for (let item in params) {
+            if (params[item] === undefined) {
+                return result.paramsLack('错误: 参数: ' + item + '不能为空', 412, '');
+            }
         }
-    }
+        // 查询用户
+        const userDetail = await UserModel.usersno(sno);
+        if (!userDetail) {
+            return result.failed('用户不存在', 403);
+        }
+        //校验密码
+        if (bcrypt.compareSync(password, userDetail.password)) {
+            //密码正确，生成用户Token
+            let userToken = {
+                id: userDetail.id,
+                username: userDetail.name,
+                sno: userDetail.sno,
+                classes: userDetail.classes,
+                image: userDetail.image,
+                type: userDetail.type
+            };
+            userToken.token = validateTools.getJWT(userToken, 60 * 60 * 24 * 3);
+            return result.success('登录成功', userToken);
+        } else {
+            return result.failed('密码错误', 401);
+        }
 
+    }
     /**
-     * 获取用户列表
-     * @param {*} ctx
+     * 修改密码
+     * @param {*} jwt
+     * @param password
      */
-    async getUserList(jwt) {
+    async getInfo(jwt) {
+        if (!jwt) {
+            return result.authorities('未登录', 403, '');
+        }
+        const data = Utils.getJwtData(jwt);
+        return result.success('查询成功', data)
+    }
+    /**
+     * 修改密码
+     * @param {*} jwt
+     * @param password
+     */
+    async updatePassword(jwt, password) {
+        if (!jwt) {
+            return result.authorities('Token 不能为空', 403, '');
+        }
+        if (password === undefined) {
+            return result.paramsLack('错误: 密码不能为空', 412, '');
+        };
         try {
             const validate = validateTools.validateJWT(jwt);
             if (validate) {
-                console.log(validate);
-                return result.success('解析token', validate);
+                const salt = bcrypt.genSaltSync();
+                password = bcrypt.hashSync(password, salt);
+                await UserModel.update(validate.data.id, { password });
+                let userToken = validate.data;
+                userToken.token = validateTools.getJWT(userToken, 60 * 60 * 24 * 3);
+                return result.success('密码已修改', userToken);
             } else {
                 return result.authorities();
             }
-            /*
-               const res = await userModel.findAll({
-                   where: {},
-                   attributes: ['id', 'username', 'password']
-               });
-               return result.pageData(null, null, res, res.length, 10, 1); */
         } catch (error) {
             console.log(error);
             return result.failed();
         }
     }
+    // /**
+    //  * 获取用户列表
+    //  * @param {*} ctx
+    //  */
+    // async getUserList(jwt) {
+    //     try {
+    //         const validate = validateTools.validateJWT(jwt);
+    //         if (validate) {
+    //             console.log(validate);
+    //             return result.success('解析token', validate);
+    //         } else {
+    //             return result.authorities();
+    //         }
+    //         /*
+    //            const res = await userModel.findAll({
+    //                where: {},
+    //                attributes: ['id', 'username', 'password']
+    //            });
+    //            return result.pageData(null, null, res, res.length, 10, 1); */
+    //     } catch (error) {
+    //         console.log(error);
+    //         return result.failed();
+    //     }
+    // }
 
     // /**
     //  * 事务demo

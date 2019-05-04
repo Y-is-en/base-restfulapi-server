@@ -9,13 +9,13 @@ const userService = new services.Users.UserService();
  */
 class UserController {
 
-    // /**
-    //  * 用户注册
-    //  * @param {*} ctx
-    //  */
-    // async userRegister(ctx) {
-    //     ctx.body = await userService.userRegister(ctx.request.body);
-    // }
+    /**
+     * 用户注册
+     * @param {*} ctx
+     */
+    async register(ctx) {
+        ctx.body = await userService.userRegister(ctx.request.body);
+    }
 
     /**
      * 用户登录
@@ -26,18 +26,27 @@ class UserController {
     }
 
     /**
-     * 获取用户列表
+     * 获取用户信息
      * @param {*} ctx
      */
-    async getUserList(ctx) {
-        ctx.body = await userService.getUserList(ctx.request.header.authorization);
+    async getInfo(ctx) {
+        ctx.body = await userService.getInfo(ctx.request.header.authorization);
+    }
+
+    /**
+     * 修改密码
+     * @param {*} ctx
+     */
+    async updatePassword(ctx) {
+        ctx.body = await userService.updatePassword(ctx.request.header.authorization, ctx.query.password);
     }
 }
 
 const {
+    register,
     userLogin,
-    getUserList
-    // userRegister
+    getInfo,
+    updatePassword
 } = new UserController();
 
 /* eslint-disable */
@@ -47,15 +56,20 @@ const routers = [{
         acc: userLogin
     },
     {
-        url: `/getUserList`,
+        url: `/updatePassword`,
         method: 'get',
-        acc: getUserList
+        acc: updatePassword
     },
-    // {
-    //     url: `/userRegister`,
-    //     method: 'post',
-    //     acc: userRegister
-    // },
+    {
+        url: `/getInfo`,
+        method: 'get',
+        acc: getInfo
+    },
+    {
+        url: `/register`,
+        method: 'post',
+        acc: register
+    },
 ];
 
 /* eslint-enable */

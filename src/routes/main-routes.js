@@ -10,7 +10,9 @@ const {
     Login,
     Admin,
     Files,
-    Common
+    Common,
+    Teacher,
+    Student
 } = controllers;
 
 const routers = [{
@@ -40,6 +42,30 @@ const routers = [{
     {
         url: `/common`,
         routes: Common.CommonController
+    },
+    {
+        url: `/teacher/subject`,
+        routes: Teacher.SubjectController
+    },
+    {
+        url: `/teacher/check`,
+        routes: Teacher.CheckController
+    },
+    {
+        url: `/teacher/result`,
+        routes: Teacher.ResultController
+    },
+    {
+        url: `/student/subject`,
+        routes: Student.SubjectController
+    },
+    {
+        url: `/student/check`,
+        routes: Student.CheckController
+    },
+    {
+        url: `/student/result`,
+        routes: Student.ResultController
     }
 ];
 

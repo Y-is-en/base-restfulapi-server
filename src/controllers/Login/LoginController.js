@@ -15,7 +15,7 @@ class LoginController {
      */
     async aminLogin(ctx) {
         const imgValidateData = ctx.cookies.get('imgValidateData');
-        ctx.body = await LoginService.aminLogin(ctx.request.body, { imgValidateData });
+        ctx.body = await LoginService.aminLogin(ctx.request.query, { imgValidateData });
     }
 }
 
@@ -26,7 +26,7 @@ const {
 /* eslint-disable */
 const routers = [{
     url: `/aminLogin`,
-    method: 'post',
+    method: 'get',
     acc: aminLogin
 }];
 

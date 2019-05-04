@@ -171,7 +171,7 @@ Koa的错误拦截中间件，需要配合上面的插件使用：https://github
 │   ├── plugins              # 插件目录
 │   │   └── smtp_sendemail  # 示例插件 - 发邮件
 │   ├── tool                # 工具目录
-│   │   ├── Result.js       # restful API统一实体返回类对象
+│   │   ├── result.js       # restful API统一实体返回类对象
 │   │   └── Utils.js        # 公共工具类
 │   ├── lib                 # 库目录
 │   │   ├── mongoUtil.js    # MongoDB工具类
